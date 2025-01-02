@@ -1,0 +1,16 @@
+python-dotenv~=1.0.1
+openai~=1.54.3
+promptflow~=1.16.1
+tenacity~=9.0.0
+diskcache~=5.6.3
+azure-identity~=1.17.1
+
+azure-ai-documentintelligence==1.0.0b2
+azure-ai-formrecognizer==3.3
+pypdf==4.2.0
+PyMuPDF==1.24.4
+opencv-python==4.10.0.84
+pylatexenc==2.10
+# Install haystack-ai fork with multimodal support - see https://github.com/deepset-ai/haystack/pull/7943/files
+https://github.com/CarlosFerLo/haystack/archive/3c2a913688e94001339d5dc3461da2862a28dac9.tar.gz
+
