@@ -27,6 +27,7 @@ from docProcess.elementProcess.selectionMarkFormatter import (
 )
 from docProcess.elementProcess.tableProcessor import DefaultDocumentTableProcessor
 from docProcess.elementProcess.wordProcessor import DefaultDocumentWordProcessor
+from docProcess.fileTools import extract_pdf_page_images, load_pymupdf_pdf
 
 selection_mark_formatter = DefaultSelectionMarkFormatter(
     selected_replacement="[X]", 
@@ -85,13 +86,19 @@ doc_intel_result_processor = DocumentIntelligenceProcessor(
 )
 
 async def processPDF(pdf_path:str):
-    # Get Doc Intelligence result
+    # step1) Get Doc Intelligence result
     di_original_result = get_analyze_document_result(pdf_path)
 
-    # Process the API response with the processor
+    # step2) convert pdf page to images
+    pdf = load_pymupdf_pdf(pdf_path=pdf_path, pdf_url=None)
+    doc_page_imgs = extract_pdf_page_images(pdf, img_dpi=100, starting_idx=1)
+
+    # step2) Process result with the element processor
     processed_content_docs = doc_intel_result_processor.process_analyze_result(
         di_original_result, 
-        on_error="ignore")
+        doc_page_imgs=doc_page_imgs,
+        on_error="raise")
+    
 
     filtered_docs = [doc for doc in processed_content_docs if  doc.meta["element_type"] != "DocumentPage"]
     print(convert_processed_di_docs_to_markdown(filtered_docs, default_text_merge_separator="\n"))

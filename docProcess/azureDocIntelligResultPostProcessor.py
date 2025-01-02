@@ -229,9 +229,7 @@ class DocumentIntelligenceProcessor:
                     # Export page image for use by this and other processors (e.g. page and figure processors)
                     transformed_page_imgs[element_info.element.page_number] = (
                         self._page_processor.export_page_img(
-                            pdf_page_img=doc_page_imgs[
-                                element_info.element.page_number
-                            ],
+                            pdf_page_img=doc_page_imgs[element_info.element.page_number],
                             di_page=element_info.element,
                         )
                     )
