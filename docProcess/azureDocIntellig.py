@@ -25,7 +25,7 @@ USAGE:
 import logging
 import os
 
-from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.ai.documentintelligence.aio import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest, AnalyzeResult
 from azure.core.credentials import AzureKeyCredential
 from dotenv import load_dotenv
@@ -44,14 +44,14 @@ DOC_INTEL_FEATURES = ['ocrHighResolution', 'languages', 'styleFont']
 
 # Set up the Document Intelligence v4.0 preview client. This will allow us to
 # use the latest features of the Document Intelligence service including figure extraction.
-di_client = DocumentIntelligenceClient(
+async_di_client = DocumentIntelligenceClient(
     endpoint=DOC_INTEL_ENDPOINT,
     credential=AzureKeyCredential(DOC_INTEL_API_KEY),
     api_version="2024-07-31-preview",
 )
 
 
-def get_analyze_document_result(
+async def get_analyze_document_result(
     pdf_file_pth: str,
     model_id: str = "prebuilt-layout",
     **kwargs
@@ -61,14 +61,18 @@ def get_analyze_document_result(
     client.
     """
     analyze_request = AnalyzeDocumentRequest(bytes_source=convert_pdf_to_base64(pdf_file_pth))
-    poller = di_client.begin_analyze_document(
-            model_id=model_id,
-            analyze_request=analyze_request,
-            features=DOC_INTEL_FEATURES,
-            **kwargs)
+    try:
+        poller = await async_di_client.begin_analyze_document(
+                model_id=model_id,
+                analyze_request=analyze_request,
+                features=DOC_INTEL_FEATURES,
+                **kwargs)
+        analyzeResult = await poller.result()
+    finally:
+        await async_di_client.close()
     
     # original result from the document intellijence
-    analyzeResult = poller.result()
+    
     return analyzeResult
 
 

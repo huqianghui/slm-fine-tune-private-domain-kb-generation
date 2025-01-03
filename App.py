@@ -93,9 +93,9 @@ doc_intel_result_processor = DocumentIntelligenceResultPostProcessor(
     selection_mark_formatter = selection_mark_formatter
 )
 
-async def processPDF(pdf_path:str):
+async def processPDF2Markdown(pdf_path:str)->str:
     # step1) Get Doc Intelligence result
-    di_original_result = get_analyze_document_result(pdf_path)
+    di_original_result = await get_analyze_document_result(pdf_path)
 
     # step2) convert pdf page to images
     pdf = load_pymupdf_pdf(pdf_path=pdf_path, pdf_url=None)
@@ -109,9 +109,9 @@ async def processPDF(pdf_path:str):
     
 
     filtered_docs = [doc for doc in processed_content_docs if  doc.meta["element_type"] != "DocumentPage"]
-    print(await convert_processed_di_docs_to_markdown(filtered_docs, default_text_merge_separator="\n"))
-
-
+    markdownResult = await convert_processed_di_docs_to_markdown(filtered_docs, default_text_merge_separator="\n")
+    print(markdownResult)
+    return markdownResult
  
 if __name__ == "__main__":
-  reulst = asyncio.run(processPDF("raw_documents/pdf/oral_cancer_text_5th_table&image.pdf"))
+  reulst = asyncio.run(processPDF2Markdown("raw_documents/pdf/oral_cancer_text_5th_table&image.pdf"))
