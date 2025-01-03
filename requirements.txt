@@ -4,6 +4,7 @@ promptflow~=1.16.1
 tenacity~=9.0.0
 diskcache~=5.6.3
 azure-identity~=1.17.1
+httpx==0.27.2
 
 azure-ai-documentintelligence==1.0.0b2
 pypdf==4.2.0
