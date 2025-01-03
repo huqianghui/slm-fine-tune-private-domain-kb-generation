@@ -22,7 +22,7 @@ class DocumentLineProcessor(DocumentElementProcessor):
     expected_elements = [DocumentLine]
 
     @abstractmethod
-    def convert_line(
+    async def convert_line(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -57,7 +57,7 @@ class DefaultDocumentLineProcessor(DocumentLineProcessor):
     ):
         self.text_format = text_format
 
-    def convert_line(
+    async def convert_line(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -83,13 +83,13 @@ class DefaultDocumentLineProcessor(DocumentLineProcessor):
         :rtype: List[HaystackDocument]
         """
         self._validate_element_type(element_info)
-        content = replace_content_formulas_and_barcodes(
+        content = await replace_content_formulas_and_barcodes(
             element_info.element.content,
             element_info.element.spans,
             all_formulas,
             all_barcodes,
         )
-        content = selection_mark_formatter.format_content(content)
+        content = await selection_mark_formatter.format_content(content)
         if self.text_format:
             formatted_text = self.text_format.format(content=content)
             formatted_if_null = self.text_format.format(content="")

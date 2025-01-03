@@ -22,7 +22,7 @@ class DocumentWordProcessor(DocumentElementProcessor):
     expected_elements = [DocumentWord]
 
     @abstractmethod
-    def convert_word(
+    async def convert_word(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -55,7 +55,7 @@ class DefaultDocumentWordProcessor(DocumentWordProcessor):
     ):
         self.text_format = text_format
 
-    def convert_word(
+    async def convert_word(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -81,13 +81,13 @@ class DefaultDocumentWordProcessor(DocumentWordProcessor):
         :rtype: List[HaystackDocument]
         """
         self._validate_element_type(element_info)
-        content = replace_content_formulas_and_barcodes(
+        content = await replace_content_formulas_and_barcodes(
             element_info.element.content,
             [element_info.element.span],
             all_formulas,
             all_barcodes,
         )
-        content = selection_mark_formatter.format_content(content)
+        content = await selection_mark_formatter.format_content(content)
         if self.text_format:
             formatted_text = self.text_format.format(content=content)
             formatted_if_null = self.text_format.format(content="")

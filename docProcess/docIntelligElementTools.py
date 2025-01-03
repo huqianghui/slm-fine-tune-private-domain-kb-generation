@@ -39,7 +39,7 @@ class ProcessedDocIntelElementDocumentType(Enum):
     TABLE = "table"
     IMAGE = "image"
 
-def get_all_formulas(analyze_result: AnalyzeResult) -> List[DocumentFormula]:
+async def get_all_formulas(analyze_result: AnalyzeResult) -> List[DocumentFormula]:
     """
     Returns all formulas from the Document Intelligence result.
 
@@ -55,7 +55,7 @@ def get_all_formulas(analyze_result: AnalyzeResult) -> List[DocumentFormula]:
         )
     )
 
-def get_all_barcodes(analyze_result: AnalyzeResult) -> List[DocumentBarcode]:
+async def get_all_barcodes(analyze_result: AnalyzeResult) -> List[DocumentBarcode]:
     """
     Returns all barcodes from the Document Intelligence result.
 
@@ -71,7 +71,7 @@ def get_all_barcodes(analyze_result: AnalyzeResult) -> List[DocumentBarcode]:
         )
     )
 
-def get_processed_di_doc_type(
+async def get_processed_di_doc_type(
     processed_di_doc: HaystackDocument,
 ) -> ProcessedDocIntelElementDocumentType:
     """
@@ -97,13 +97,13 @@ def get_processed_di_doc_type(
     else:
         raise ValueError(f"Unknown processed DI document type: {processed_di_doc}")
 
-def document_span_to_span_bounds(
+async def document_span_to_span_bounds(
     span: DocumentSpan
 ) -> SpanBounds:
     """Converts a DocumentSpan object to a SpanBounds object."""
     return SpanBounds(span.offset, span.offset + span.length)
 
-def order_element_info_list(
+async def order_element_info_list(
     element_span_info_list: List[ElementInfo],
 ) -> List[ElementInfo]:
     """
@@ -172,7 +172,7 @@ def get_document_element_spans(
             f"Class {document_element.__class__.__name__} does not contain span field."
         )
 
-def get_element_span_info_list(
+async def get_element_span_info_list(
     analyze_result: "AnalyzeResult",
     page_span_calculator: PageSpanCalculator,
     section_to_incremental_id_mapper: Dict[int, tuple[int]],
@@ -228,7 +228,7 @@ def get_element_span_info_list(
                     element=element,
                     full_span_bounds=full_span_bounds,
                     spans=spans,
-                    start_page_number=page_span_calculator.determine_span_start_page(
+                    start_page_number=await page_span_calculator.determine_span_start_page(
                         full_span_bounds.offset
                     ),
                     section_heirarchy_incremental_id=section_to_incremental_id_mapper.get(
@@ -327,7 +327,7 @@ def _convert_section_heirarchy_to_incremental_numbering(
             section_to_incremental_id_mapper[section_id] = incremental_id_tup
     return section_to_incremental_id_mapper
 
-def convert_element_heirarchy_to_incremental_numbering(
+async def convert_element_heirarchy_to_incremental_numbering(
     elem_heirarchy_mapper: dict[str, Dict[int, tuple[int]]]
 ) -> Dict[str, Dict[int, tuple[int]]]:
     """
@@ -363,7 +363,7 @@ def convert_element_heirarchy_to_incremental_numbering(
 
     return dict(element_to_incremental_id_mapper)
 
-def get_section_heirarchy(
+async def get_section_heirarchy(
     section_direct_children_mapper: dict,
 ) -> dict[int, tuple[int]]:
     """
@@ -412,7 +412,7 @@ def _get_section_heirarchy(
                 output[parent] = (current_id,) + children_tup
     return output
 
-def get_element_heirarchy_mapper(
+async def get_element_heirarchy_mapper(
     analyze_result: "AnalyzeResult",
 ) -> Dict[str, Dict[int, tuple[int]]]:
     """
@@ -443,7 +443,7 @@ def get_element_heirarchy_mapper(
                     section_direct_children_mapper[section_id].append(child_id)
 
     # Now recursively work through the mapping to develop a multi-level heirarchy for every section
-    section_heirarchy = get_section_heirarchy(section_direct_children_mapper)
+    section_heirarchy = await get_section_heirarchy(section_direct_children_mapper)
 
     # Now map each element to the section parents
     elem_to_section_parent_mapper = defaultdict(dict)
@@ -463,7 +463,7 @@ def get_element_heirarchy_mapper(
     elem_to_section_parent_mapper["sections"] = section_heirarchy
     return dict(elem_to_section_parent_mapper)
 
-def convert_processed_di_docs_to_markdown(
+async def convert_processed_di_docs_to_markdown(
     processed_content_docs: List[HaystackDocument],
     default_text_merge_separator: str = "\n",
 ) -> str:
@@ -493,7 +493,7 @@ def convert_processed_di_docs_to_markdown(
                 content_doc.content.startswith("_"),
             ]
         )
-        doc_type = get_processed_di_doc_type(content_doc)
+        doc_type = await get_processed_di_doc_type(content_doc)
         if doc_type in [
             ProcessedDocIntelElementDocumentType.TEXT,
             ProcessedDocIntelElementDocumentType.TABLE,
@@ -532,7 +532,7 @@ def convert_processed_di_docs_to_markdown(
             raise ValueError("Unknown processed DI document type.")
     return "".join(output_texts).strip()
 
-def convert_processed_di_doc_chunks_to_markdown(
+async def convert_processed_di_doc_chunks_to_markdown(
     content_doc_chunks: List[List[HaystackDocument]],
     chunk_prefix: str = "**###### Start of New Chunk ######**",
     default_text_merge_separator: str = "\n",
@@ -561,7 +561,7 @@ def convert_processed_di_doc_chunks_to_markdown(
         chunked_outputs.append(chunk_prefix)
         chunked_outputs.append("\n")
         chunked_outputs.append(
-            convert_processed_di_docs_to_markdown(
+            await convert_processed_di_docs_to_markdown(
                 chunk_docs, default_text_merge_separator=default_text_merge_separator
             )
         )

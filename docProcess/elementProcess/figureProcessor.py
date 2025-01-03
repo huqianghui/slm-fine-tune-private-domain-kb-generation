@@ -44,7 +44,7 @@ class DocumentFigureProcessor(DocumentElementProcessor):
     expected_elements = [DocumentFigure]
 
     @abstractmethod
-    def convert_figure(
+    async def convert_figure(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -126,7 +126,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         self.after_figure_text_formats = after_figure_text_formats
         self.markdown_img_tag_path_or_url = markdown_img_tag_path_or_url
 
-    def convert_figure(
+    async def convert_figure(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -177,7 +177,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         }
         if self.before_figure_text_formats:
             outputs.extend(
-                self._export_figure_text(
+                await self._export_figure_text(
                     element_info,
                     analyze_result,
                     all_formulas,
@@ -192,10 +192,10 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
             page_element = analyze_result.pages[
                 page_numbers[0] - 1
             ]  # Convert 1-based page number to 0-based index
-            figure_img = self.convert_figure_to_img(
+            figure_img = await self.convert_figure_to_img(
                 element_info.element, transformed_page_img, page_element
             )
-            figure_img_text_docs = self._export_figure_text(
+            figure_img_text_docs = await self._export_figure_text(
                 element_info,
                 analyze_result,
                 all_formulas,
@@ -221,7 +221,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
             )
         if self.after_figure_text_formats:
             outputs.extend(
-                self._export_figure_text(
+                await self._export_figure_text(
                     element_info,
                     analyze_result,
                     all_formulas,
@@ -235,7 +235,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
 
         return outputs
 
-    def _export_figure_text(
+    async def _export_figure_text(
         self,
         element_info: ElementInfo,
         analyze_result: AnalyzeResult,
@@ -268,9 +268,9 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         :return: List of HaystackDocument objects containing the text content.
         :rtype: List[HaystackDocument]
         """
-        figure_number_text = get_element_number(element_info)
-        caption_text = selection_mark_formatter.format_content(
-            replace_content_formulas_and_barcodes(
+        figure_number_text = await get_element_number(element_info)
+        caption_text = await selection_mark_formatter.format_content(
+            await replace_content_formulas_and_barcodes(
                 element_info.element.caption.content,
                 element_info.element.caption.spans,
                 all_formulas,
@@ -280,10 +280,10 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
             else ""
         )
         if element_info.element.footnotes:
-            footnotes_text = selection_mark_formatter.format_content(
+            footnotes_text = await selection_mark_formatter.format_content(
                 "\n".join(
                     [
-                        replace_content_formulas_and_barcodes(
+                        await replace_content_formulas_and_barcodes(
                             footnote.content, footnote.spans, all_formulas, all_barcodes
                         )
                         for footnote in element_info.element.footnotes
@@ -293,8 +293,8 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         else:
             footnotes_text = ""
         # Get text content only if it is necessary (it is a slow operation)
-        content_text = selection_mark_formatter.format_content(
-            self._get_figure_text_content(
+        content_text = await selection_mark_formatter.format_content(
+            await self._get_figure_text_content(
                 element_info.element,
                 analyze_result,
                 all_formulas,
@@ -331,7 +331,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
             ]
         return list()
 
-    def _get_figure_text_content(
+    async def _get_figure_text_content(
         self,
         figure_element: DocumentFigure,
         analyze_result: AnalyzeResult,
@@ -385,16 +385,18 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
                     break
                 span_perfect_match = para.spans[0] == content_span
                 span_perfect_match = False
-                if span_perfect_match or all(
-                    is_span_in_span(para_span, content_span) for para_span in para.spans
-                ):
+                span_checks = [
+                    await is_span_in_span(para_span, content_span)
+                    for para_span in para.spans
+                ]
+                if span_perfect_match or all(span_checks):
                     matched_spans.extend(para.spans)
                     if current_line_strings:
                         output_line_strings.append(" ".join(current_line_strings))
                         current_line_strings = list()
                     output_line_strings.append(
-                        selection_mark_formatter.format_content(
-                            replace_content_formulas_and_barcodes(
+                        await selection_mark_formatter.format_content(
+                            await replace_content_formulas_and_barcodes(
                                 para.content, para.spans, all_formulas, all_barcodes
                             )
                         )
@@ -407,24 +409,26 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
                     if line.spans[0].offset > content_min_max_span_bounds.end:
                         break
                     # If line is already part of a higher-priority element, skip it
-                    if any(
-                        is_span_in_span(line_span, matched_span)
-                        for matched_span in matched_spans
-                        for line_span in line.spans
-                    ):
+                    check_list = []
+                    for matched_span in matched_spans:
+                        for line_span in line.spans:
+                            check_list.append(await is_span_in_span(line_span, matched_span))
+                    if any(check_list):
                         continue
+                    
                     span_perfect_match = line.spans[0] == content_span
-                    if span_perfect_match or all(
-                        is_span_in_span(line_span, content_span)
+                    span_checks = [
+                        await is_span_in_span(line_span, content_span)
                         for line_span in line.spans
-                    ):
+                    ]
+                    if span_perfect_match or all(span_checks):
                         matched_spans.extend(line.spans)
                         if current_line_strings:
                             output_line_strings.append(" ".join(current_line_strings))
                             current_line_strings = list()
                         output_line_strings.append(
-                            selection_mark_formatter.format_content(
-                                replace_content_formulas_and_barcodes(
+                            await selection_mark_formatter.format_content(
+                                await replace_content_formulas_and_barcodes(
                                     line.content, line.spans, all_formulas, all_barcodes
                                 )
                             )
@@ -436,16 +440,17 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
                     if word.span.offset > content_min_max_span_bounds.end:
                         break
                     # If line is already part of a higher-priority element, skip it
-                    if any(
-                        is_span_in_span(word.span, matched_span)
+                    span_checks = [
+                        await is_span_in_span(word.span, matched_span)
                         for matched_span in matched_spans
-                    ):
+                    ]
+                    if any(span_checks):
                         continue
                     span_perfect_match = word.span == content_span
-                    if span_perfect_match or is_span_in_span(word.span, content_span):
+                    if span_perfect_match or (await is_span_in_span(word.span, content_span)):
                         current_line_strings.append(
-                            selection_mark_formatter.format_content(
-                                replace_content_formulas_and_barcodes(
+                            await selection_mark_formatter.format_content(
+                                await replace_content_formulas_and_barcodes(
                                     word.content,
                                     [word.span],
                                     all_formulas,
@@ -460,7 +465,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
             return "\n".join(output_line_strings)
         return ""
 
-    def convert_figure_to_img(
+    async def convert_figure_to_img(
         self,
         figure: DocumentFigure,
         transformed_page_img: TransformedImage,

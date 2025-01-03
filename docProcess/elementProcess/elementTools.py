@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from azure.ai.documentintelligence.models import (
@@ -12,10 +13,10 @@ from .elementInfo import ElementInfo, SpanBounds
 
 LATEX_NODES_TO_TEXT = LatexNodes2Text()
 
-def get_element_number(element_info: ElementInfo) -> str:
+async def get_element_number(element_info: ElementInfo) -> str:
     return str(int(element_info.element_id.split("/")[-1]) + 1)
 
-def latex_to_text(latex_str: str) -> str:
+async def latex_to_text(latex_str: str) -> str:
     """
     Converts a string containing LaTeX to plain text.
 
@@ -26,8 +27,7 @@ def latex_to_text(latex_str: str) -> str:
     """
     return LATEX_NODES_TO_TEXT.latex_to_text(latex_str).strip()
 
-
-def is_span_in_span(
+async def is_span_in_span(
     span: DocumentSpan,
     parent_span: DocumentSpan,
 ) -> bool:
@@ -45,8 +45,7 @@ def is_span_in_span(
         parent_span.offset + parent_span.length
     )
 
-
-def get_barcodes_in_spans(
+async def get_barcodes_in_spans(
     all_barcodes: List[DocumentBarcode],
     spans: List[DocumentSpan],
 ) -> List[DocumentBarcode]:
@@ -67,7 +66,7 @@ def get_barcodes_in_spans(
         )
     return matching_barcodes
 
-def substitute_content_formulas(
+async def substitute_content_formulas(
     content: str, matching_formulas: list[DocumentFormula]
 ) -> str:
     """
@@ -102,7 +101,7 @@ def substitute_content_formulas(
     new_content += content[last_idx:]
     return new_content
 
-def substitute_content_barcodes(
+async def substitute_content_barcodes(
     content: str, matching_barcodes: list[DocumentBarcode]
 ) -> str:
     """
@@ -142,7 +141,7 @@ def substitute_content_barcodes(
     new_content += content[last_idx:]
     return new_content
 
-def get_formulas_in_spans(
+async def get_formulas_in_spans(
     all_formulas: List[DocumentFormula],
     spans: List[DocumentSpan],
 ) -> List[DocumentFormula]:
@@ -163,7 +162,7 @@ def get_formulas_in_spans(
         )
     return matching_formulas
 
-def replace_content_formulas_and_barcodes(
+async def replace_content_formulas_and_barcodes(
     content: str,
     content_spans: List[DocumentSpan],
     all_formulas: List[DocumentFormula],
@@ -184,11 +183,11 @@ def replace_content_formulas_and_barcodes(
     :rtype: str
     """
     if ":formula:" in content:
-        matching_formulas = get_formulas_in_spans(all_formulas, content_spans)
-        content = substitute_content_formulas(content, matching_formulas)
+        matching_formulas = await get_formulas_in_spans(all_formulas, content_spans)
+        content = await substitute_content_formulas(content, matching_formulas)
     if ":barcode:" in content:
-        matching_barcodes = get_barcodes_in_spans(all_barcodes, content_spans)
-        content = substitute_content_barcodes(content, matching_barcodes)
+        matching_barcodes = await get_barcodes_in_spans(all_barcodes, content_spans)
+        content = await substitute_content_barcodes(content, matching_barcodes)
     return content
 
 def get_min_and_max_span_bounds(

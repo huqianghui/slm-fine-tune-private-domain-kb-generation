@@ -93,7 +93,7 @@ class DocumentIntelligenceResultPostProcessor:
         self._word_processor = word_processor
         self._selection_mark_formatter = selection_mark_formatter
 
-    def process_analyze_result(
+    async def process_analyze_result(
         self,
         analyze_result: AnalyzeResult,
         doc_page_imgs: Optional[Dict[int, PILImage]] = None,
@@ -139,21 +139,21 @@ class DocumentIntelligenceResultPostProcessor:
                     )
                 )
         # Get mapper of element to section heirarchy
-        elem_heirarchy_mapper = get_element_heirarchy_mapper(analyze_result)
+        elem_heirarchy_mapper = await get_element_heirarchy_mapper(analyze_result)
         section_to_incremental_id_mapper = (
-            convert_element_heirarchy_to_incremental_numbering(elem_heirarchy_mapper)
+            await convert_element_heirarchy_to_incremental_numbering(elem_heirarchy_mapper)
         )
 
         page_span_calculator = PageSpanCalculator(analyze_result)
 
         # # Get list of all spans in order
-        element_span_info_list = get_element_span_info_list(
+        element_span_info_list = await  get_element_span_info_list(
             analyze_result, page_span_calculator, section_to_incremental_id_mapper
         )
-        ordered_element_span_info_list = order_element_info_list(element_span_info_list)
+        ordered_element_span_info_list = await  order_element_info_list(element_span_info_list)
 
-        all_formulas = get_all_formulas(analyze_result)
-        all_barcodes = get_all_barcodes(analyze_result)
+        all_formulas = await get_all_formulas(analyze_result)
+        all_barcodes = await get_all_barcodes(analyze_result)
 
         # Create outputs
         full_output_list: List[HaystackDocument] = list()
@@ -182,10 +182,11 @@ class DocumentIntelligenceResultPostProcessor:
                 ):
                     span_already_processed = False
                     for element_span in element_info.spans:
-                        if any(
-                            is_span_in_span(element_span, processed_span)
-                            for processed_span in current_page_priority_spans
-                        ):
+                        spans_check = [
+                            await is_span_in_span(element_span, processed_span)
+                            for processed_span in current_page_priority_spans]
+                        
+                        if any(spans_check):
                             span_already_processed = True
                             break
                     if span_already_processed:
@@ -197,7 +198,7 @@ class DocumentIntelligenceResultPostProcessor:
                     > current_page_info.start_page_number
                 ):
                     full_output_list.extend(
-                        self._page_processor.convert_page_end(
+                        await self._page_processor.convert_page_end(
                             current_page_info,
                             transformed_page_imgs[
                                 current_page_info.element.page_number
@@ -209,8 +210,7 @@ class DocumentIntelligenceResultPostProcessor:
                     current_page_priority_spans = [
                         span
                         for span in current_page_priority_spans
-                        if document_span_to_span_bounds(span).offset
-                        > current_page_info.full_span_bounds.end
+                        if await document_span_to_span_bounds(span).offset > current_page_info.full_span_bounds.end
                     ]
                 ### Process new elements. The order of element types in this if/else loop matches
                 ### the ordering by `ordered_element_span_info_list` and should not be changed.
@@ -219,7 +219,7 @@ class DocumentIntelligenceResultPostProcessor:
                         element_info.section_heirarchy_incremental_id
                     )
                     full_output_list.extend(
-                        self._section_processor.convert_section(
+                        await self._section_processor.convert_section(
                             element_info, current_section_heirarchy_incremental_id
                         )
                     )
@@ -228,14 +228,14 @@ class DocumentIntelligenceResultPostProcessor:
                 elif isinstance(element_info.element, DocumentPage):
                     # Export page image for use by this and other processors (e.g. page and figure processors)
                     transformed_page_imgs[element_info.element.page_number] = (
-                        self._page_processor.export_page_img(
+                        await self._page_processor.export_page_img(
                             pdf_page_img=doc_page_imgs[element_info.element.page_number],
                             di_page=element_info.element,
                         )
                     )
                     current_page_info = element_info
                     full_output_list.extend(
-                        self._page_processor.convert_page_start(
+                        await self._page_processor.convert_page_start(
                             element_info,
                             transformed_page_imgs[
                                 current_page_info.element.page_number
@@ -247,7 +247,7 @@ class DocumentIntelligenceResultPostProcessor:
                 # Process high priority elements with text content
                 elif isinstance(element_info.element, DocumentTable):
                     full_output_list.extend(
-                        self._table_processor.convert_table(
+                        await self._table_processor.convert_table(
                             element_info,
                             all_formulas,
                             all_barcodes,
@@ -257,7 +257,7 @@ class DocumentIntelligenceResultPostProcessor:
                     )
                 elif isinstance(element_info.element, DocumentFigure):
                     full_output_list.extend(
-                        self._figure_processor.convert_figure(
+                        await self._figure_processor.convert_figure(
                             element_info,
                             transformed_page_imgs[element_info.start_page_number],
                             analyze_result,
@@ -273,7 +273,7 @@ class DocumentIntelligenceResultPostProcessor:
                     continue
                 elif isinstance(element_info.element, DocumentParagraph):
                     full_output_list.extend(
-                        self._paragraph_processor.convert_paragraph(
+                        await self._paragraph_processor.convert_paragraph(
                             element_info,
                             all_formulas,
                             all_barcodes,
@@ -283,7 +283,7 @@ class DocumentIntelligenceResultPostProcessor:
                     )
                 elif isinstance(element_info.element, DocumentLine):
                     full_output_list.extend(
-                        self._line_processor.convert_line(
+                        await self._line_processor.convert_line(
                             element_info,
                             all_formulas,
                             all_barcodes,
@@ -293,7 +293,7 @@ class DocumentIntelligenceResultPostProcessor:
                     )
                 elif isinstance(element_info.element, DocumentWord):
                     full_output_list.extend(
-                        self._word_processor.convert_word(
+                        await self._word_processor.convert_word(
                             element_info,
                             all_formulas,
                             all_barcodes,
@@ -303,7 +303,7 @@ class DocumentIntelligenceResultPostProcessor:
                     )
                 elif isinstance(element_info.element, DocumentKeyValuePair):
                     full_output_list.extend(
-                        self._key_value_pair_processor.convert_kv_pair(
+                        await self._key_value_pair_processor.convert_kv_pair(
                             element_info,
                             all_formulas,
                             all_barcodes,
@@ -341,7 +341,7 @@ class DocumentIntelligenceResultPostProcessor:
         # All content processed, add the final page output and the last chunk
         if current_page_info is not None:
             full_output_list.extend(
-                self._page_processor.convert_page_end(
+                await self._page_processor.convert_page_end(
                     current_page_info,
                     transformed_page_imgs[current_page_info.element.page_number],
                     current_section_heirarchy_incremental_id,
@@ -353,7 +353,7 @@ class DocumentIntelligenceResultPostProcessor:
             )
         return full_output_list
 
-    def merge_adjacent_text_content_docs(
+    async def merge_adjacent_text_content_docs(
         self,
         chunk_content_list: Union[List[List[HaystackDocument]], List[HaystackDocument]],
         default_text_merge_separator: str = "\n\n",
@@ -395,7 +395,7 @@ class DocumentIntelligenceResultPostProcessor:
             current_text_snippets: List[str] = list()
             current_chunk_content_list = list()
             for content_doc in chunk:
-                doc_type = get_processed_di_doc_type(content_doc)
+                doc_type = await get_processed_di_doc_type(content_doc)
                 if doc_type in [
                     ProcessedDocIntelElementDocumentType.TEXT,
                     ProcessedDocIntelElementDocumentType.TABLE,

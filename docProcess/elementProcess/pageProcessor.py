@@ -20,7 +20,7 @@ class DocumentPageProcessor(DocumentElementProcessor):
     expected_elements = [DocumentPage]
 
     @abstractmethod
-    def export_page_img(
+    async def export_page_img(
         self, pdf_page_img: PILImage, di_page: DocumentPage
     ) -> TransformedImage:
         """
@@ -28,7 +28,7 @@ class DocumentPageProcessor(DocumentElementProcessor):
         """
 
     @abstractmethod
-    def convert_page_start(
+    async def convert_page_start(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -39,7 +39,7 @@ class DocumentPageProcessor(DocumentElementProcessor):
         """
 
     @abstractmethod
-    def convert_page_end(
+    async def convert_page_end(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -106,7 +106,7 @@ class DefaultDocumentPageProcessor(DocumentPageProcessor):
         self.adjust_rotation = adjust_rotation
         self.rotated_fill_color = rotated_fill_color
 
-    def export_page_img(
+    async def export_page_img(
         self, pdf_page_img: PILImage, di_page: DocumentPage
     ) -> TransformedImage:
         """
@@ -132,7 +132,7 @@ class DefaultDocumentPageProcessor(DocumentPageProcessor):
             rotation_applied=di_page.angle if self.adjust_rotation else None,
         )
 
-    def convert_page_start(
+    async def convert_page_start(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -172,7 +172,7 @@ class DefaultDocumentPageProcessor(DocumentPageProcessor):
             )
         return outputs
 
-    def convert_page_end(
+    async def convert_page_end(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -300,9 +300,9 @@ class PageSpanCalculator:
         self.page_span_bounds: Dict[int, SpanBounds] = self._get_page_span_bounds(
             analyze_result
         )
-        self._doc_end_span = self.page_span_bounds[max(self.page_span_bounds)].end
+        self._doc_end_span =  self.page_span_bounds[max(self.page_span_bounds)].end
 
-    def determine_span_start_page(self, span_start_offset: int) -> int:
+    async def determine_span_start_page(self, span_start_offset: int) -> int:
         """
         Determines the page on which a span starts.
 

@@ -1,14 +1,13 @@
 import asyncio
 import os
 
-from roundRobin.azureOpenAIClientRoundRobin import AzureOpenAIClientsRoundRobin
+from roundRobin.azureOpenAIClientRoundRobin import client_manager
 
 
 async def roundRonbinTest():
     # step1) Get Doc Intelligence result
-    azureOpenAIClientsRoundRobin = AzureOpenAIClientsRoundRobin()
     for i in range(10):
-        aAzureOpenclient = await azureOpenAIClientsRoundRobin.get_next_client()
+        aAzureOpenclient = await client_manager.get_next_client()
         response = await aAzureOpenclient.chat.completions.create(
             model=os.getenv("AZURE_OPENAI_ROUND_ROBIN_DEPLOYMENT_NAME","gpt-4o"),
             messages=[

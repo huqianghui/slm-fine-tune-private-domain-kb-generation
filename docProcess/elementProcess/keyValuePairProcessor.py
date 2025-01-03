@@ -22,7 +22,7 @@ class DocumentKeyValuePairProcessor(DocumentElementProcessor):
     expected_elements = [DocumentKeyValuePair]
 
     @abstractmethod
-    def convert_kv_pair(
+    async def convert_kv_pair(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -57,7 +57,7 @@ class DefaultDocumentKeyValuePairProcessor(DocumentKeyValuePairProcessor):
     ):
         self.text_format = text_format
 
-    def convert_kv_pair(
+    async def convert_kv_pair(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -83,20 +83,20 @@ class DefaultDocumentKeyValuePairProcessor(DocumentKeyValuePairProcessor):
         :rtype: List[HaystackDocument]
         """
         self._validate_element_type(element_info)
-        key_content = replace_content_formulas_and_barcodes(
+        key_content = await replace_content_formulas_and_barcodes(
             element_info.element.key.content,
             element_info.element.key.spans,
             all_formulas,
             all_barcodes,
         )
-        key_content = selection_mark_formatter.format_content(key_content)
-        value_content = replace_content_formulas_and_barcodes(
+        key_content = await selection_mark_formatter.format_content(key_content)
+        value_content = await replace_content_formulas_and_barcodes(
             element_info.element.value.content,
             element_info.element.value.spans,
             all_formulas,
             all_barcodes,
         )
-        value_content = selection_mark_formatter.format_content(value_content)
+        value_content = await selection_mark_formatter.format_content(value_content)
         if self.text_format:
             formatted_text = self.text_format.format(
                 key_content=key_content, value_content=value_content

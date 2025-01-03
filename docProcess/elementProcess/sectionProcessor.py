@@ -8,7 +8,7 @@ from .elementInfo import ElementInfo
 from .elementProcessor import DocumentElementProcessor
 
 
-def get_heading_hashes(section_heirarchy: Optional[tuple[int]]) -> str:
+async def get_heading_hashes(section_heirarchy: Optional[tuple[int]]) -> str:
     """
     Gets the heading hashes for a section heirarchy.
 
@@ -30,7 +30,7 @@ class DocumentSectionProcessor(DocumentElementProcessor):
     expected_elements = [DocumentSection]
 
     @abstractmethod
-    def convert_section(
+    async def convert_section(
         self,
         element_info: ElementInfo,
         section_heirarchy: Optional[tuple[int]],
@@ -73,7 +73,7 @@ class DefaultDocumentSectionProcessor(DocumentSectionProcessor):
             max_heirarchy_depth if max_heirarchy_depth is not None else 999
         )
 
-    def convert_section(
+    async def convert_section(
         self,
         element_info: ElementInfo,
         section_heirarchy: Optional[tuple[int]],

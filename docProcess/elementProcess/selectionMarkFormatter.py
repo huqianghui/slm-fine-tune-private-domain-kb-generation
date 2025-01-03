@@ -7,7 +7,7 @@ class SelectionMarkFormatter(ABC):
     """
 
     @abstractmethod
-    def format_content(self, content: str) -> str:
+    async def format_content(self, content: str) -> str:
         pass
 
 class DefaultSelectionMarkFormatter(SelectionMarkFormatter):
@@ -32,7 +32,7 @@ class DefaultSelectionMarkFormatter(SelectionMarkFormatter):
         self._selected_replacement = selected_replacement
         self._unselected_replacement = unselected_replacement
 
-    def format_content(self, content: str) -> str:
+    async def format_content(self, content: str) -> str:
         """
         Formats text content, replacing any selection mark placeholders with
         the selected or unselected replacement text.

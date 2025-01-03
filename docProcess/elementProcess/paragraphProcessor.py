@@ -24,7 +24,7 @@ class DocumentParagraphProcessor(DocumentElementProcessor):
     expected_elements = [DocumentParagraph]
 
     @abstractmethod
-    def convert_paragraph(
+    async def convert_paragraph(
         self,
         element_info: ElementInfo,
         all_barcodes: List[DocumentBarcode],
@@ -91,7 +91,7 @@ class DefaultDocumentParagraphProcessor(DocumentParagraphProcessor):
             ParagraphRole.PAGE_NUMBER: page_number_format,
         }
 
-    def convert_paragraph(
+    async def convert_paragraph(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -118,16 +118,16 @@ class DefaultDocumentParagraphProcessor(DocumentParagraphProcessor):
         """
         self._validate_element_type(element_info)
         format_mapper = self.paragraph_format_mapper[element_info.element.role]
-        heading_hashes = get_heading_hashes(
+        heading_hashes = await get_heading_hashes(
             element_info.section_heirarchy_incremental_id
         )
-        content = replace_content_formulas_and_barcodes(
+        content = await replace_content_formulas_and_barcodes(
             element_info.element.content,
             element_info.element.spans,
             all_formulas,
             all_barcodes,
         )
-        content = selection_mark_formatter.format_content(content)
+        content = await selection_mark_formatter.format_content(content)
         if format_mapper:
             formatted_text = format_mapper.format(
                 heading_hashes=heading_hashes, content=content

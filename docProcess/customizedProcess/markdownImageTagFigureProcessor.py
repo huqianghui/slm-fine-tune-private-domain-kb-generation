@@ -20,7 +20,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 class MarkdownImageTagDocumentFigureProcessor(DefaultDocumentFigureProcessor):
-    def convert_figure(
+    async def convert_figure(
         self,
         element_info: ElementInfo,
         transformed_page_img: TransformedImage,
@@ -71,7 +71,7 @@ class MarkdownImageTagDocumentFigureProcessor(DefaultDocumentFigureProcessor):
         }
         if self.before_figure_text_formats:
             outputs.extend(
-                self._export_figure_text(
+                await self._export_figure_text(
                     element_info,
                     analyze_result,
                     all_formulas,
@@ -86,10 +86,10 @@ class MarkdownImageTagDocumentFigureProcessor(DefaultDocumentFigureProcessor):
             page_element = analyze_result.pages[
                 page_numbers[0] - 1
             ]  # Convert 1-based page number to 0-based index
-            figure_img = self.convert_figure_to_img(
+            figure_img = await self.convert_figure_to_img(
                 element_info.element, transformed_page_img, page_element
             )
-            figure_img_text_docs = self._export_figure_text(
+            figure_img_text_docs = await self._export_figure_text(
                 element_info,
                 analyze_result,
                 all_formulas,

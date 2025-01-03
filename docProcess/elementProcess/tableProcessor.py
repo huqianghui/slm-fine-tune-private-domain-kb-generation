@@ -24,7 +24,7 @@ class DocumentTableProcessor(DocumentElementProcessor):
     expected_elements = [DocumentTable]
 
     @abstractmethod
-    def convert_table(
+    async def convert_table(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -88,7 +88,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
         self.before_table_text_formats = before_table_text_formats
         self.after_table_text_formats = after_table_text_formats
 
-    def convert_table(
+    async def convert_table(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -123,7 +123,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
         }
         if self.before_table_text_formats:
             outputs.extend(
-                self._export_table_text(
+                await self._export_table_text(
                     element_info,
                     all_formulas,
                     all_barcodes,
@@ -134,7 +134,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
                 )
             )
         # Convert table content
-        table_md, table_df = self._convert_table_content(
+        table_md, table_df = await self._convert_table_content(
             element_info.element, all_formulas, all_barcodes, selection_mark_formatter
         )
         outputs.append(
@@ -147,7 +147,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
         )
         if self.after_table_text_formats:
             outputs.extend(
-                self._export_table_text(
+                await self._export_table_text(
                     element_info,
                     all_formulas,
                     all_barcodes,
@@ -160,7 +160,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
 
         return outputs
 
-    def _export_table_text(
+    async def _export_table_text(
         self,
         element_info: ElementInfo,
         all_formulas: List[DocumentFormula],
@@ -192,10 +192,10 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
             content.
         :rtype: List[HaystackDocument]
         """
-        table_number_text = get_element_number(element_info)
+        table_number_text = await get_element_number(element_info)
         caption_text = (
-            selection_mark_formatter.format_content(
-                replace_content_formulas_and_barcodes(
+            await selection_mark_formatter.format_content(
+                await replace_content_formulas_and_barcodes(
                     element_info.element.caption.content,
                     element_info.element.caption.spans,
                     all_formulas,
@@ -205,10 +205,10 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
             if getattr(element_info.element, "caption", None)
             else ""
         )
-        footnotes_text = selection_mark_formatter.format_content(
+        footnotes_text = await selection_mark_formatter.format_content(
             "\n".join(
                 [
-                    replace_content_formulas_and_barcodes(
+                    await replace_content_formulas_and_barcodes(
                         footnote.content, footnote.spans, all_formulas, all_barcodes
                     )
                     for footnote in getattr(element_info.element, "footnotes", None)
@@ -239,7 +239,7 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
             ]
         return list()
 
-    def _convert_table_content(
+    async def _convert_table_content(
         self,
         table: DocumentTable,
         all_formulas: List[DocumentFormula],
@@ -276,8 +276,8 @@ class DefaultDocumentTableProcessor(DocumentTableProcessor):
             if cell.kind == "rowHeader":
                 num_index_cols = max(num_index_cols, cell.column_index + 1)
             # Get text content
-            cell_content = selection_mark_formatter.format_content(
-                replace_content_formulas_and_barcodes(
+            cell_content = await selection_mark_formatter.format_content(
+                await replace_content_formulas_and_barcodes(
                     cell.content, cell.spans, all_formulas, all_barcodes
                 )
             )
