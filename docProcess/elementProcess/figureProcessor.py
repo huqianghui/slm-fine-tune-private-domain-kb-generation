@@ -118,11 +118,13 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         output_figure_img: bool = True,
         figure_img_text_format: Optional[str] = "\n*Figure Image:*",
         after_figure_text_formats: Optional[List[str]] = None,
+        markdown_img_tag_path_or_url:Optional[str] = None
     ):
         self.before_figure_text_formats = before_figure_text_formats
         self.output_figure_img = output_figure_img
         self.figure_img_text_format = figure_img_text_format
         self.after_figure_text_formats = after_figure_text_formats
+        self.markdown_img_tag_path_or_url = markdown_img_tag_path_or_url
 
     def convert_figure(
         self,
@@ -132,7 +134,7 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
         all_formulas: List[DocumentFormula],
         all_barcodes: List[DocumentBarcode],
         selection_mark_formatter: SelectionMarkFormatter,
-        section_heirarchy: Optional[tuple[int]],
+        section_heirarchy: Optional[tuple[int]]
     ) -> List[HaystackDocument]:
         """
         Converts a DocumentFigure element into a list of HaystackDocument

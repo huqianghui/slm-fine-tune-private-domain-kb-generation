@@ -1,16 +1,9 @@
 import asyncio
-import json
-import logging
-import os
-
-import pandas as pd
-import tiktoken
-from dotenv import load_dotenv
-from promptflow.tracing import start_trace, trace
-from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from docProcess.azureDocIntellig import get_analyze_document_result
-from docProcess.azureDocIntelligResultPostProcessor import DocumentIntelligenceProcessor
+from docProcess.azureDocIntelligResultPostProcessor import (
+    DocumentIntelligenceResultPostProcessor,
+)
 from docProcess.docIntelligElementTools import convert_processed_di_docs_to_markdown
 from docProcess.elementProcess.figureProcessor import DefaultDocumentFigureProcessor
 from docProcess.elementProcess.keyValuePairProcessor import (
@@ -46,14 +39,14 @@ page_processor = DefaultDocumentPageProcessor(
     rotated_fill_color = (255, 255, 255),
 )
 table_processor = DefaultDocumentTableProcessor(
-    before_table_text_formats=["**Table {table_number} Info**\n", "*Table Caption:* {caption}", "*Table Footnotes:* {footnotes}", "*Table Content:*"],
+    before_table_text_formats=["*Table Caption:* {caption}"],
     after_table_text_formats=None,
 )
 
 # add content to text format
 figure_processor = DefaultDocumentFigureProcessor(
-    before_figure_text_formats=["**Figure {figure_number} Info**\n", "*Figure Caption:* {caption}", "*Figure Footnotes:* {footnotes}", "*Figure Content:*\n{content}"],
-    output_figure_img=True,
+    before_figure_text_formats=["*Figure Caption:* {caption}"],
+    output_figure_img=False,
     figure_img_text_format="*Figure Content:*\n{content}",
     after_figure_text_formats=None,
 )
@@ -74,7 +67,7 @@ line_processor = DefaultDocumentLineProcessor()
 word_processor = DefaultDocumentWordProcessor()
 
 # Now construct the DocumentIntelligenceProcessor class which uses each of these sub-processors
-doc_intel_result_processor = DocumentIntelligenceProcessor(
+doc_intel_result_processor = DocumentIntelligenceResultPostProcessor(
     page_processor = page_processor,
     section_processor = section_processor,
     table_processor = table_processor,

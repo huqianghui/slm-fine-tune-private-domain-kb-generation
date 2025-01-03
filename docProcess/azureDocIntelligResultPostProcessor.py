@@ -70,7 +70,7 @@ from .elementProcess.wordProcessor import (
 from .imageTools import TransformedImage
 
 
-class DocumentIntelligenceProcessor:
+class DocumentIntelligenceResultPostProcessor:
      
     def __init__(self,
         page_processor: DocumentPageProcessor = DefaultDocumentPageProcessor(),
