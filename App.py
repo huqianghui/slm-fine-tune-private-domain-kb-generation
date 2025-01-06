@@ -5,6 +5,9 @@ from docProcess.azureDocIntellig import get_analyze_document_result
 from docProcess.azureDocIntelligResultPostProcessor import (
     DocumentIntelligenceResultPostProcessor,
 )
+from docProcess.customizedProcess.imgeDescriptionByLlmFigureProcessor import (
+    ImgeDescriptionByLlmFigureProcessor,
+)
 from docProcess.customizedProcess.markdownImageTagFigureProcessor import (
     MarkdownImageTagDocumentFigureProcessor,
 )
@@ -57,6 +60,21 @@ figure_processor = DefaultDocumentFigureProcessor(
 
 markdown_img_tag_path_or_url = os.getenv("MARKDOWN_IMG_TAG_PATH_OR_URL")
 
+# markdown_figure_processor = MarkdownImageTagDocumentFigureProcessor(
+#     before_figure_text_formats=["*Figure Caption:* {caption}"],
+#     output_figure_img=True,
+#     figure_img_text_format="*Figure Content:*\n{content}",
+#     after_figure_text_formats=None,
+#     markdown_img_tag_path_or_url=markdown_img_tag_path_or_url
+# )
+
+imgeDescriptionByLlmFigureProcessor = ImgeDescriptionByLlmFigureProcessor(
+   before_figure_text_formats=["*Figure Caption:* {caption}"],
+   output_figure_img=True,
+   figure_img_text_format="*Figure Content:*\n{content}",
+   after_figure_text_formats=None
+)
+
 markdown_figure_processor = MarkdownImageTagDocumentFigureProcessor(
     before_figure_text_formats=["*Figure Caption:* {caption}"],
     output_figure_img=True,
@@ -86,7 +104,7 @@ doc_intel_result_processor = DocumentIntelligenceResultPostProcessor(
     page_processor = page_processor,
     section_processor = section_processor,
     table_processor = table_processor,
-    figure_processor = markdown_figure_processor,
+    figure_processor = imgeDescriptionByLlmFigureProcessor,
     paragraph_processor = paragraph_processor,
     line_processor = line_processor,
     word_processor = word_processor,

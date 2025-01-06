@@ -235,6 +235,23 @@ class DefaultDocumentFigureProcessor(DocumentFigureProcessor):
 
         return outputs
 
+    async def get_image_caption_text(self,
+                                      element_info: ElementInfo,
+                                      selection_mark_formatter: SelectionMarkFormatter,
+                                      all_formulas: List[DocumentFormula],
+                                      all_barcodes: List[DocumentBarcode],):
+        return await selection_mark_formatter.format_content(
+            await replace_content_formulas_and_barcodes(
+                element_info.element.caption.content,
+                element_info.element.caption.spans,
+                all_formulas,
+                all_barcodes,
+            )
+            if element_info.element.caption
+            else ""
+        )
+
+
     async def _export_figure_text(
         self,
         element_info: ElementInfo,

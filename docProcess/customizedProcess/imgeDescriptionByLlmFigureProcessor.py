@@ -11,17 +11,30 @@ from azure.ai.documentintelligence.models import (
 )
 from dotenv import load_dotenv
 from haystack.dataclasses import Document as HaystackDocument
+from openai.types.chat import (
+    ChatCompletionContentPartImageParam,
+    ChatCompletionContentPartTextParam,
+    ChatCompletionUserMessageParam,
+)
+from openai.types.chat.chat_completion_assistant_message_param import (
+    ChatCompletionAssistantMessageParam,
+)
+from openai.types.chat.chat_completion_content_part_image_param import ImageURL
 from PIL.Image import Image as PILImage
 
+from prompt.systemPromptImageDescription import system_prompt_image_descripter
+from prompt.userPromptImageDescription import user_prompt_image_descriptor
 from roundRobin.azureOpenAIClientRoundRobin import client_manager
 
 from ..elementProcess.elementInfo import ElementInfo
 from ..elementProcess.figureProcessor import DefaultDocumentFigureProcessor
 from ..elementProcess.selectionMarkFormatter import SelectionMarkFormatter
-from ..imageTools import TransformedImage
+from ..imageTools import TransformedImage, pil_img_str_to_png_url
 
 load_dotenv()
 logger = logging.getLogger(__name__)
+
+
 
 class ImgeDescriptionByLlmFigureProcessor(DefaultDocumentFigureProcessor):
     async def convert_figure(
@@ -107,6 +120,8 @@ class ImgeDescriptionByLlmFigureProcessor(DefaultDocumentFigureProcessor):
                 figure_img_text_docs[0].content if figure_img_text_docs else ""
             )
 
+            cationText = await self.get_image_caption_text(element_info,selection_mark_formatter,all_formulas,all_barcodes)
+
             current_workspace_path = os.getenv("CURRENT_WORKSPACE_PATH")
             hash_object = hashlib.md5(element_info.element_id.encode("utf-8")) 
             hash_code = hash_object.hexdigest() 
@@ -114,10 +129,12 @@ class ImgeDescriptionByLlmFigureProcessor(DefaultDocumentFigureProcessor):
             figure_img.save(file_path)
 
             # add the image to the markdown with content as alt text
+            figure_img_text_llm = await self._get_image_description_by_LLM(figure_img,page_element,cationText)
+            
             if self.markdown_img_tag_path_or_url:
-                figure_img_text = f"![]({self.markdown_img_tag_path_or_url}{hash_code}_img.png)"
+                figure_img_text = f"![]({self.markdown_img_tag_path_or_url}{hash_code}_img.png) \n  the image's description by larage language mode: {figure_img_text_llm} \n"
             else:
-                figure_img_text = f"![]({hash_code}_img.png)"
+                figure_img_text = f"![]({hash_code}_img.png) \n  the image's description by larage language mode: {figure_img_text_llm} \n"
 
             outputs.append(
                 HaystackDocument(
@@ -142,6 +159,33 @@ class ImgeDescriptionByLlmFigureProcessor(DefaultDocumentFigureProcessor):
 
         return outputs
     
-    async def _get_image_description_by_LLM(self,image:PILImage,page:DocumentPage)->str:
+    async def _get_image_description_by_LLM(self,image:PILImage,page:DocumentPage,cationText:str)->str:
+        domain = os.getenv("CURRENT_DOCUMENT_DOMAIN","")
+
+        markdown_lines = []
+        for line in page.lines:
+            markdown_lines.append(line.content)
+        
+        all_markdown_content = "\n".join(markdown_lines)
+
         asyncAzureOpenclient = await client_manager.get_next_client()
-        pass
+        msg_content_list = list()
+        msg_content_list.append(ChatCompletionContentPartTextParam(type="text", text=user_prompt_image_descriptor.format(page_content=all_markdown_content,image_caption=cationText).content))
+        msg_content_list.append(ChatCompletionContentPartImageParam(
+                    type="image_url",
+                    image_url=ImageURL(url=pil_img_str_to_png_url(image),detail="auto")))
+        
+        message_dict = {"role": "user", "content": msg_content_list}
+        userMessageList = ChatCompletionUserMessageParam(message_dict)
+        response = await asyncAzureOpenclient.chat.completions.create(
+            model=os.getenv("AZURE_OPENAI_ROUND_ROBIN_DEPLOYMENT_NAME","gpt-4o"),
+            messages=[
+            {
+                "role": "system",
+
+                "content": system_prompt_image_descripter.format(domain=domain).content
+            },
+            userMessageList
+            ]
+        )
+        return response.choices[0].message.content

@@ -1,4 +1,5 @@
 import base64
+import io
 import itertools
 from dataclasses import dataclass
 from io import BytesIO
@@ -357,3 +358,19 @@ def base64_img_str_to_url(base64_img_str: str, mime_type: str) -> str:
     :rtype: str
     """
     return f"data:{mime_type};base64,{base64_img_str}"
+
+def pil_img_str_to_png_url(image:PILImage) -> str:
+    """
+    Converts a  image  into a data URL.
+
+    :param image: An image file.
+    :type image: PILImage
+    :return: A data URL for the image.
+    :rtype: str
+    """
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    base64_str = base64.b64encode(buffer.read()).decode()
+    data_url = f"data:image/png;base64,{base64_str}"
+    return data_url

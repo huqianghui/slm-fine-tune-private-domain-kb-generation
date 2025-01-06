@@ -9,4 +9,4 @@ Your task is to descript the image content according the context that the user p
 Please generate the response in the language of the user's request in less than 200 words.
 '''
 
-system_prompt_descripter = SystemMessagePromptTemplate.from_template(systemTemplateImageDescripter)
+system_prompt_image_descripter = SystemMessagePromptTemplate.from_template(systemTemplateImageDescripter)

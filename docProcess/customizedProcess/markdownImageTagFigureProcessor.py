@@ -99,9 +99,8 @@ class MarkdownImageTagDocumentFigureProcessor(DefaultDocumentFigureProcessor):
                 text_formats=[self.figure_img_text_format],
                 meta={},
             )
-            figure_img_context_text = (
-                figure_img_text_docs[0].content if figure_img_text_docs else ""
-            )
+            
+            imageCationText = _get_image_caption_text(element_info,)
 
             current_workspace_path = os.getenv("CURRENT_WORKSPACE_PATH")
             hash_object = hashlib.md5(element_info.element_id.encode("utf-8")) 
