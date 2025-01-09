@@ -210,7 +210,7 @@ class DocumentIntelligenceResultPostProcessor:
                     current_page_priority_spans = [
                         span
                         for span in current_page_priority_spans
-                        if await document_span_to_span_bounds(span).offset > current_page_info.full_span_bounds.end
+                        if (await document_span_to_span_bounds(span)).offset > current_page_info.full_span_bounds.end
                     ]
                 ### Process new elements. The order of element types in this if/else loop matches
                 ### the ordering by `ordered_element_span_info_list` and should not be changed.

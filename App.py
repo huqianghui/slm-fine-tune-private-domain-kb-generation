@@ -46,16 +46,16 @@ page_processor = DefaultDocumentPageProcessor(
     rotated_fill_color = (255, 255, 255),
 )
 table_processor = DefaultDocumentTableProcessor(
-    before_table_text_formats=["*Table Caption:* {caption}"],
-    after_table_text_formats=None,
+    before_table_text_formats=["\n### Table Caption:* {caption}"],
+    after_table_text_formats=["\n### Table Caption:* {caption} end"],
 )
 
 # add content to text format
 figure_processor = DefaultDocumentFigureProcessor(
-    before_figure_text_formats=["*Figure Caption:* {caption}"],
+    before_figure_text_formats=["\n### Figure Caption:* {caption}"],
     output_figure_img=False,
     figure_img_text_format="*Figure Content:*\n{content}",
-    after_figure_text_formats=None,
+    after_figure_text_formats="\n### Figure Caption:* {caption} end",
 )
 
 markdown_img_tag_path_or_url = os.getenv("MARKDOWN_IMG_TAG_PATH_OR_URL")
@@ -69,17 +69,17 @@ markdown_img_tag_path_or_url = os.getenv("MARKDOWN_IMG_TAG_PATH_OR_URL")
 # )
 
 imgeDescriptionByLlmFigureProcessor = ImgeDescriptionByLlmFigureProcessor(
-   before_figure_text_formats=["*Figure Caption:* {caption}"],
+   before_figure_text_formats=["\n### Figure Caption:* {caption}"],
    output_figure_img=True,
    figure_img_text_format="*Figure Content:*\n{content}",
-   after_figure_text_formats=None
+   after_figure_text_formats=["\n### Figure Caption:* {caption} end"]
 )
 
 markdown_figure_processor = MarkdownImageTagDocumentFigureProcessor(
-    before_figure_text_formats=["*Figure Caption:* {caption}"],
+    before_figure_text_formats=["\n### Figure Caption:* {caption}"],
     output_figure_img=True,
     figure_img_text_format="*Figure Content:*\n{content}",
-    after_figure_text_formats=None,
+    after_figure_text_formats=["\n### Figure Caption:* {caption} end"],
     markdown_img_tag_path_or_url=markdown_img_tag_path_or_url
 )
 
@@ -125,11 +125,40 @@ async def processPDF2Markdown(pdf_path:str)->str:
         doc_page_imgs=doc_page_imgs,
         on_error="raise")
     
-
+    # step3) save the processed content to markdown
     filtered_docs = [doc for doc in processed_content_docs if  doc.meta["element_type"] != "DocumentPage"]
     markdownResult = await convert_processed_di_docs_to_markdown(filtered_docs, default_text_merge_separator="\n")
-    print(markdownResult)
+    base_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    await saveMarkdown(markdownResult,base_name)
+
+    # step4) split the markdown content into chunk files
+    await senamicChunkMarkdown2Chunkfiles(markdownResult,base_name)
+
     return markdownResult
- 
+
+from semanticChunk.contentSplit import (
+    mergeSpitsIntoChunk,
+    processMergdeChunkFile,
+    saveMergedChunkIntoFile,
+    splitContentByMarkdownHeader,
+)
+
+
+async def senamicChunkMarkdown2Chunkfiles(markdownContent:str,filename:str):
+        splitResult = await splitContentByMarkdownHeader(markdownContent,filename) 
+
+        mergedChunkList =  await mergeSpitsIntoChunk(splitResult)
+        mergedChunkFileList =await saveMergedChunkIntoFile(mergedChunkList,filename)
+        await processMergdeChunkFile(mergedChunkFileList)
+
+
+async def saveMarkdown(markdown:str, fileName:str):
+    path = os.path.join(os.getenv("CURRENT_WORKSPACE_PATH"), "processed_documents", "markdown")
+    os.makedirs(path, exist_ok=True)
+    
+    with open(path +"/" + f"{fileName}.md", "w", encoding="utf-8") as f:
+        f.write(markdown)
+
+
 if __name__ == "__main__":
-  reulst = asyncio.run(processPDF2Markdown("raw_documents/pdf/oral_cancer_text_5th_table&image.pdf"))
+  reulst = asyncio.run(processPDF2Markdown("raw_documents/pdf/oral_cancer_range1-6.pdf"))
