@@ -60,14 +60,6 @@ figure_processor = DefaultDocumentFigureProcessor(
 
 markdown_img_tag_path_or_url = os.getenv("MARKDOWN_IMG_TAG_PATH_OR_URL")
 
-# markdown_figure_processor = MarkdownImageTagDocumentFigureProcessor(
-#     before_figure_text_formats=["*Figure Caption:* {caption}"],
-#     output_figure_img=True,
-#     figure_img_text_format="*Figure Content:*\n{content}",
-#     after_figure_text_formats=None,
-#     markdown_img_tag_path_or_url=markdown_img_tag_path_or_url
-# )
-
 imgeDescriptionByLlmFigureProcessor = ImgeDescriptionByLlmFigureProcessor(
    before_figure_text_formats=["\n### Figure Caption:* {caption}"],
    output_figure_img=True,

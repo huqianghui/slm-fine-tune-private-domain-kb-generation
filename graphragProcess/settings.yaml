@@ -78,7 +78,7 @@ skip_workflows: []
 
 entity_extraction:
   prompt: "prompts/tuned/entity_extraction.txt"
-  entity_types: [organization,person,geo,event]
+  entity_types: [person, organization, manual/guide, cancer type, staging system, anatomical structure, prognostic factor, biomarker, lifestyle factor, diagnostic tool, treatment approach, performance measure, medical condition, lymph node group, tumor characteristic, imaging modality, disease site, risk factor, classification system]
   max_gleanings: 1
 
 summarize_descriptions:
