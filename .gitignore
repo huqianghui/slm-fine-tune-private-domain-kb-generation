@@ -276,3 +276,10 @@ graphragProcess/prompts/summarize_descriptions.txt
 graphragProcess/prompts/tuned/community_report.txt
 graphragProcess/prompts/tuned/entity_extraction.txt
 graphragProcess/prompts/tuned/summarize_descriptions.txt
+
+
+notebook/imageProcess/*
+output_vertical/*
+*.jpg
+*.json
+*.png
